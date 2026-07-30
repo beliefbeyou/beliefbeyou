@@ -1,0 +1,148 @@
+---
+import { centers, thresholds } from '../data/questions.js';
+
+const LINE_URL = 'https://lin.ee/r0ZWBxZ';
+const SITE_NAME = '一朵雲身心美學療癒';
+
+// 供前端計分用的精簡資料（不含題目本身，題目直接渲染在頁面上）
+const clientData = {
+  thresholds,
+  centers: centers.map((c) => ({
+    order: c.order,
+    name: c.name,
+    sanskrit: c.sanskrit,
+    theme: c.theme,
+    high: c.high,
+    mid: c.mid,
+    low: c.low,
+    advice: c.advice,
+    max: c.questions.reduce((sum, q) => sum + Math.max(...q.options.map((o) => o.s)), 0),
+  })),
+};
+
+const totalQuestions = centers.reduce((n, c) => n + c.questions.length, 0);
+let qNum = 0;
+---
+
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>中脈能量測評｜一朵雲身心美學療癒</title>
+    <meta
+      name="description"
+      content="49 題專業版中脈能量測評——透過七大能量中心的檢視，找到你的心相卡點，開啟內外整合的順流之旅。"
+    />
+    <meta property="og:title" content="中脈能量測評｜一朵雲身心美學療癒" />
+    <meta
+      property="og:description"
+      content="49 題專業版中脈能量測評——找到你的心相卡點，開啟順流之旅。"
+    />
+    <link
+      rel="icon"
+      href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path fill="%23C9A86C" d="M20 46a13 13 0 1 1 2.8-25.7A17 17 0 0 1 55 27.6 11 11 0 0 1 51.5 49H20z"/></svg>'
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="bg-glow" aria-hidden="true"></div>
+
+    <header class="site-header">
+      <div class="brand">
+        <img src="/images/logo.png" alt="一朵雲身心美學療癒" class="brand-logo" />
+        <p class="brand-en">Be Lief Essence &amp; Aesthetic Empowerment Academy</p>
+      </div>
+    </header>
+
+    <main>
+      <!-- ══════════ 首頁 ══════════ -->
+      <section id="view-intro" class="view">
+        <p class="kicker">HOLISTIC ENERGY ASSESSMENT</p>
+        <h1 class="hero-title">中脈能量測評</h1>
+        <p class="hero-sub">49 題專業版・找到你的心相卡點</p>
+        <div class="gold-rule" aria-hidden="true"></div>
+        <p class="hero-lead">
+          中脈能量中心，是你內在狀態的一面鏡子。<br />
+          透過這份測評，看見能量正在順流之處<br />
+          也溫柔展示出，你目前正在經歷的卡點
+        </p>
+
+        <div class="card notice-card">
+          <h2 class="card-title">測評須知</h2>
+          <ol class="notice-list">
+            <li>透過中脈能量測評，找到<strong>自己的心相卡點</strong></li>
+            <li>本測評共 <strong>49 道題</strong>，更準確反映你的情況</li>
+            <li>此為專業版，題目較多，請<strong>耐心作答</strong></li>
+            <li>為確保結果準確，請依照<strong>真實行為</strong>作答</li>
+          </ol>
+          <div class="notice-meta">
+            <span>題型｜單選題 × {totalQuestions}</span>
+            <span>時間｜約 5–8 分鐘</span>
+          </div>
+        </div>
+
+        <button type="button" class="btn btn-gold" data-action="start">靜下心來，開始測評</button>
+      </section>
+
+      <!-- ══════════ 測驗 ══════════ -->
+      <section id="view-quiz" class="view" hidden>
+        <div class="progress-wrap">
+          <div class="progress-info">
+            <span id="progress-label">第 1 頁／共 {centers.length} 頁</span>
+            <span id="progress-center"></span>
+          </div>
+          <div class="progress-track"><div id="progress-fill" class="progress-fill"></div></div>
+        </div>
+
+        {
+          centers.map((center, ci) => (
+            <div class="quiz-page" data-center={ci} hidden={ci !== 0}>
+              <div class="section-head">
+                <p class="section-order">{center.order}</p>
+                <h2 class="section-title">{center.name}</h2>
+                <p class="section-sanskrit">{center.sanskrit}</p>
+                <p class="section-theme">{center.theme}</p>
+              </div>
+
+              {center.questions.map((question) => {
+                qNum += 1;
+                const name = `q${qNum}`;
+                return (
+                  <fieldset class="q" data-center={ci}>
+                    <legend class="q-text">
+                      <span class="q-num">{qNum}</span>
+                      {question.q}
+                    </legend>
+                    <div class="opts">
+                      {question.options.map((opt) => (
+                        <label class="opt">
+                          <input type="radio" name={name} value={opt.s} />
+                          <span class="opt-dot" aria-hidden="true" />
+                          <span class="opt-text">{opt.t}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <p class="q-missing-hint">請選擇一個選項</p>
+                  </fieldset>
+                );
+              })}
+            </div>
+          ))
+        }
+
+        <div class="quiz-nav">
+          <button type="button" class="btn btn-ghost" data-action="prev">上一頁</button>
+          <button type="button" class="btn btn-gold" data-action="next">下一頁</button>
+        </div>
+      </section>
+
+      <!-- ══════════ 結果 ══════════ -->
+      <section id="view-result" class="view" hidden>
+        <p class="kicker">YOUR ENERGY REPORT</p>
+        <h1 class="hero-title
