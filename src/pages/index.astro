@@ -145,4 +145,155 @@ let qNum = 0;
       <!-- ══════════ 結果 ══════════ -->
       <section id="view-result" class="view" hidden>
         <p class="kicker">YOUR ENERGY REPORT</p>
-        <h1 class="hero-title
+        <h1 class="hero-title hero-title--sm">你的能量報告</h1>
+        <div class="gold-rule" aria-hidden="true"></div>
+
+        <div class="card score-card">
+          <p class="score-label">整體能量指數</p>
+          <p class="score-value"><span id="total-score">0</span><span class="score-unit">分</span></p>
+          <p id="total-comment" class="score-comment"></p>
+        </div>
+
+        <div class="card chart-card">
+          <h2 class="card-title">七大能量中心</h2>
+          <div id="bars"></div>
+          <p class="chart-note">得分率越高，代表該能量中心越順流。</p>
+        </div>
+
+        <div class="card focus-card">
+          <p class="focus-kicker">你的主要心相卡點</p>
+          <h2 id="focus-name" class="focus-name"></h2>
+          <p id="focus-sanskrit" class="focus-sanskrit"></p>
+          <p id="focus-desc" class="focus-desc"></p>
+          <div class="focus-advice">
+            <p class="focus-advice-label">調頻建議</p>
+            <p id="focus-advice-text"></p>
+          </div>
+        </div>
+
+        <p class="disclaimer">本測評結果僅供自我覺察參考，不具醫療或心理診斷性質。</p>
+
+        <!-- 關於 Eudora -->
+        <div class="about">
+          <div class="about-photo-wrap">
+            <img src="/images/eudora.jpg" alt="徐羽鋅 Eudora Hsu" class="about-photo" loading="lazy" />
+          </div>
+          <div class="about-body">
+            <p class="kicker kicker--left">ABOUT YOUR COACH</p>
+            <h2 class="about-name">徐羽鋅 Eudora Hsu</h2>
+            <p class="about-title">{SITE_NAME}創辦人・個人品牌形象戰略教練</p>
+            <p class="about-text">
+              近 10 年、上千場一對一諮詢經驗，獨創「HPIS
+              全息個人品牌形象識別系統」與「身心美商能量學」，融合東方陰陽哲學、西方心理學、教練學與形象管理學——陪伴你從內在能量調頻開始，對齊外在形象與天命定位，讓內外合一，活出高能量的理想版本。
+            </p>
+            <div class="cta-box">
+              <p class="cta-lead">想更深入了解你的能量卡點，找到專屬的調頻之路？</p>
+              <a class="btn btn-gold" href={LINE_URL} target="_blank" rel="noopener">
+                加入 LINE<br class="br-mobile" /> 預約 1:1 諮詢
+              </a>
+              <p class="cta-note">點擊後將開啟官方 LINE，由 Eudora 團隊為你安排</p>
+            </div>
+          </div>
+        </div>
+
+        <button type="button" class="btn btn-ghost btn-retake" data-action="retake">重新測驗</button>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>
+        © 2026 {SITE_NAME}｜<a href="https://beliefbeyou.com" target="_blank" rel="noopener">beliefbeyou.com</a>
+      </p>
+    </footer>
+
+    <script type="application/json" id="quiz-data" set:html={JSON.stringify(clientData)} />
+
+    <script>
+      const data = JSON.parse(document.getElementById('quiz-data').textContent);
+      const STORE_KEY = 'bbq-answers-v1';
+
+      const views = {
+        intro: document.getElementById('view-intro'),
+        quiz: document.getElementById('view-quiz'),
+        result: document.getElementById('view-result'),
+      };
+      const pages = [...document.querySelectorAll('.quiz-page')];
+      const nextBtn = document.querySelector('[data-action="next"]');
+      const prevBtn = document.querySelector('[data-action="prev"]');
+      const progressLabel = document.getElementById('progress-label');
+      const progressCenter = document.getElementById('progress-center');
+      const progressFill = document.getElementById('progress-fill');
+
+      let page = 0;
+
+      function showView(name) {
+        Object.values(views).forEach((v) => (v.hidden = true));
+        views[name].hidden = false;
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }
+
+      function renderPage() {
+        pages.forEach((p, i) => (p.hidden = i !== page));
+        const c = data.centers[page];
+        progressLabel.textContent = `第 ${page + 1} 頁／共 ${pages.length} 頁`;
+        progressCenter.textContent = `${c.name} ${c.sanskrit}`;
+        progressFill.style.width = `${((page + 1) / pages.length) * 100}%`;
+        prevBtn.style.visibility = page === 0 ? 'hidden' : 'visible';
+        nextBtn.textContent = page === pages.length - 1 ? '查看我的能量報告' : '下一頁';
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }
+
+      function validatePage() {
+        const fields = [...pages[page].querySelectorAll('.q')];
+        let firstMissing = null;
+        fields.forEach((f) => {
+          const ok = !!f.querySelector('input:checked');
+          f.classList.toggle('q--missing', !ok);
+          if (!ok && !firstMissing) firstMissing = f;
+        });
+        if (firstMissing) {
+          firstMissing.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return false;
+        }
+        return true;
+      }
+
+      function saveAnswers() {
+        const saved = {};
+        document.querySelectorAll('.q input:checked').forEach((input) => {
+          saved[input.name] = input.value;
+        });
+        try {
+          sessionStorage.setItem(STORE_KEY, JSON.stringify(saved));
+        } catch (e) {
+          /* 私密瀏覽模式下無法儲存，略過 */
+        }
+      }
+
+      function restoreAnswers() {
+        try {
+          const saved = JSON.parse(sessionStorage.getItem(STORE_KEY) || '{}');
+          Object.entries(saved).forEach(([name, value]) => {
+            const input = document.querySelector(`input[name="${name}"][value="${value}"]`);
+            if (input) input.checked = true;
+          });
+        } catch (e) {
+          /* ignore */
+        }
+      }
+
+      function stateOf(pct) {
+        if (pct >= data.thresholds.flow) return { label: '順流', cls: 'flow' };
+        if (pct >= data.thresholds.balance) return { label: '待平衡', cls: 'balance' };
+        return { label: '卡點', cls: 'block' };
+      }
+
+      function computeResult() {
+        const results = data.centers.map((c, ci) => {
+          let sum = 0;
+          document
+            .querySelectorAll(`.q[data-center="${ci}"] input:checked`)
+            .forEach((input) => (sum += Number(input.value)));
+          const pct = Math.round((sum / c.max) * 100);
+          return { ...c, sum, pct };
+        });
