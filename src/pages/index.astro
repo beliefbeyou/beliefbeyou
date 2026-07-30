@@ -297,3 +297,303 @@ let qNum = 0;
           const pct = Math.round((sum / c.max) * 100);
           return { ...c, sum, pct };
         });
+const totalSum = results.reduce((n, r) => n + r.sum, 0);
+        const totalMax = results.reduce((n, r) => n + r.max, 0);
+        const totalPct = Math.round((totalSum / totalMax) * 100);
+
+        document.getElementById('total-score').textContent = totalSum;
+        const comment =
+          totalPct >= 75
+            ? '整體能量流動順暢，繼續保持覺察，讓順流成為你的日常。'
+            : totalPct >= 50
+              ? '整體能量大致平穩，部分能量中心正等待你的調頻與關注。'
+              : '有多個能量中心正在呼喚你的關注——這正是內在邀請你升級的時刻。';
+        document.getElementById('total-comment').textContent = comment;
+
+        // 長條圖
+        const barsEl = document.getElementById('bars');
+        barsEl.innerHTML = '';
+        const weakest = results.reduce((min, r) => (r.pct < min.pct ? r : min), results[0]);
+        results.forEach((r) => {
+          const st = stateOf(r.pct);
+          const row = document.createElement('div');
+          row.className = 'bar-row' + (r === weakest ? ' bar-row--weakest' : '');
+          row.innerHTML = `
+            <div class="bar-head">
+              <span class="bar-name">${r.name}<em>${r.sanskrit}</em></span>
+              <span class="bar-tag bar-tag--${st.cls}">${st.label}</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill bar-fill--${st.cls}" style="width:0%"></div></div>
+            <span class="bar-pct">${r.pct}%</span>`;
+          barsEl.appendChild(row);
+          requestAnimationFrame(() =>
+            requestAnimationFrame(() => {
+              row.querySelector('.bar-fill').style.width = `${r.pct}%`;
+            })
+          );
+        });
+
+        // 主要卡點
+        const st = stateOf(weakest.pct);
+        document.getElementById('focus-name').textContent = weakest.name;
+        document.getElementById('focus-sanskrit').textContent =
+          `${weakest.sanskrit}｜${weakest.theme}`;
+        const desc =
+          st.cls === 'flow'
+            ? `你的七大能量中心整體都相當順流，「${weakest.name}」是其中相對較弱的一環。${weakest.mid}`
+            : st.cls === 'balance'
+              ? weakest.mid
+              : weakest.low;
+        document.getElementById('focus-desc').textContent = desc;
+        document.getElementById('focus-advice-text').textContent = weakest.advice;
+      }
+
+      // ── 事件 ──
+      document.querySelector('[data-action="start"]').addEventListener('click', () => {
+        showView('quiz');
+        renderPage();
+      });
+
+      nextBtn.addEventListener('click', () => {
+        if (!validatePage()) return;
+        if (page < pages.length - 1) {
+          page += 1;
+          renderPage();
+        } else {
+          computeResult();
+          showView('result');
+        }
+      });
+
+      prevBtn.addEventListener('click', () => {
+        if (page > 0) {
+          page -= 1;
+          renderPage();
+        }
+      });
+
+      document.querySelector('[data-action="retake"]').addEventListener('click', () => {
+        document.querySelectorAll('.q input:checked').forEach((i) => (i.checked = false));
+        document.querySelectorAll('.q--missing').forEach((f) => f.classList.remove('q--missing'));
+        try {
+          sessionStorage.removeItem(STORE_KEY);
+        } catch (e) {
+          /* ignore */
+        }
+        page = 0;
+        showView('intro');
+      });
+
+      document.querySelectorAll('.q input').forEach((input) => {
+        input.addEventListener('change', () => {
+          input.closest('.q').classList.remove('q--missing');
+          saveAnswers();
+        });
+      });
+
+      restoreAnswers();
+    </script>
+
+    <style is:global>
+      :root {
+        --navy-950: #052430;
+        --navy-900: #0a3a4d;
+        --navy-800: #0f4d66;
+        --teal: #147a99;
+        --teal-soft: #1c95ba;
+        --gold: #ad8550;
+        --gold-light: #c9a86c;
+        --gold-pale: #e5cfa4;
+        --cream: #f1faff;
+        --aqua: #8fdce6;
+        --peach: #e7bc9d;
+        --copper: #c07a52;
+        --ink-soft: rgba(241, 250, 255, 0.72);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        font-family: 'Noto Sans TC', sans-serif;
+        color: var(--cream);
+        background: linear-gradient(168deg, var(--navy-950) 0%, var(--navy-800) 45%, #1c7fa3 100%);
+        background-attachment: fixed;
+        min-height: 100vh;
+        line-height: 1.7;
+        letter-spacing: 0.02em;
+      }
+
+      .bg-glow {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background:
+          radial-gradient(ellipse 60% 40% at 85% 8%, rgba(143, 220, 230, 0.16), transparent 70%),
+          radial-gradient(ellipse 55% 45% at 10% 90%, rgba(20, 122, 153, 0.35), transparent 70%),
+          radial-gradient(ellipse 35% 22% at 20% 18%, rgba(241, 250, 255, 0.05), transparent 70%);
+        z-index: 0;
+      }
+
+      .site-header,
+      main,
+      .site-footer {
+        position: relative;
+        z-index: 1;
+      }
+
+      /* ── Header ── */
+      .site-header {
+        display: flex;
+        justify-content: center;
+        padding: 28px 20px 0;
+      }
+
+      .brand {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .brand-logo {
+        height: 52px;
+        width: auto;
+        display: block;
+      }
+
+      .brand-en {
+        font-size: 0.62rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--aqua);
+        text-align: center;
+      }
+
+      /* ── Layout ── */
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 40px 20px 80px;
+      }
+
+      .view[hidden] {
+        display: none !important;
+      }
+
+      .kicker {
+        text-align: center;
+        font-size: 0.7rem;
+        letter-spacing: 0.45em;
+        color: var(--gold-light);
+        margin-bottom: 18px;
+      }
+
+      .kicker--left {
+        text-align: left;
+        margin-bottom: 10px;
+      }
+
+      .hero-title {
+        font-family: 'Noto Serif TC', serif;
+        font-size: clamp(2.1rem, 6vw, 3rem);
+        font-weight: 600;
+        text-align: center;
+        letter-spacing: 0.18em;
+      }
+
+      .hero-title--sm {
+        font-size: clamp(1.8rem, 5vw, 2.4rem);
+      }
+
+      .hero-sub {
+        text-align: center;
+        color: var(--aqua);
+        letter-spacing: 0.22em;
+        margin-top: 10px;
+        font-size: 0.95rem;
+      }
+
+      .gold-rule {
+        width: 64px;
+        height: 1px;
+        margin: 26px auto;
+        background: linear-gradient(90deg, transparent, var(--gold-light), transparent);
+        position: relative;
+      }
+
+      .gold-rule::after {
+        content: '';
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 5px;
+        height: 5px;
+        transform: translate(-50%, -50%) rotate(45deg);
+        background: var(--gold-light);
+      }
+
+      .hero-lead {
+        text-align: center;
+        color: var(--ink-soft);
+        font-size: 0.98rem;
+        margin-bottom: 36px;
+      }
+
+      /* ── Cards ── */
+      .card {
+        background: rgba(241, 250, 255, 0.045);
+        border: 1px solid rgba(201, 168, 108, 0.22);
+        border-radius: 14px;
+        padding: 30px 28px;
+        margin-bottom: 28px;
+        backdrop-filter: blur(6px);
+      }
+
+      .card-title {
+        font-family: 'Noto Serif TC', serif;
+        font-size: 1.1rem;
+        font-weight: 600;
+        letter-spacing: 0.3em;
+        color: var(--gold-pale);
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      .notice-list {
+        list-style: none;
+        counter-reset: notice;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 22px;
+      }
+
+      .notice-list li {
+        counter-increment: notice;
+        position: relative;
+        padding-left: 2em;
+        color: var(--ink-soft);
+        font-size: 0.95rem;
+      }
+
+      .notice-list li::before {
+        content: counter(notice, cjk-ideographic);
+        position: absolute;
+        left: 0;
+        top: 0.1em;
+        font-family: 'Noto Serif TC', serif;
+        color: var(--gold-light);
+        font-size: 0.85rem;
+      }
+
+      .notice-list strong {
+        color: var(--cream);
+      }
